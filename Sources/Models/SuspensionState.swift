@@ -138,8 +138,10 @@ enum FrameParser {
         else if low { s.height = .low }
     }
 
-    /// Mirrors UtilsBle.ByteToString special-case.
+    /// Mirrors UtilsBle.ByteToString. (The original's "240" special case compares
+    /// the decimal string to "1100000000", which can never match a 0-255 byte, so
+    /// the effective behavior — here and in the original — is just the byte value.)
     private static func byteToPressureString(_ byte: UInt8) -> String {
-        Int(byte) == 0b1100000000 ? "240" : String(Int(byte))
+        String(Int(byte))
     }
 }
