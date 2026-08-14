@@ -148,9 +148,9 @@ struct ControllerView: View {
                 ))
                 .toggleStyle(.button).buttonStyle(.bordered)
 
-                // All-down: hold to activate (safety); sends the dump frame.
-                HoldButton(title: "All Down (hold)", systemImage: "arrow.down.to.line",
-                           tint: .red, minimumHold: 3.0,
+                // All-down: hold 5s to activate (safety); sends the dump frame.
+                HoldButton(title: "All Down (hold 5s)", systemImage: "arrow.down.to.line",
+                           tint: .red, minimumHold: 5.0,
                            onPress: { },
                            onRelease: { },
                            onHoldComplete: { ble.send(OnAirCommand.allDown) })
