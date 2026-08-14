@@ -53,17 +53,16 @@ final class BLEManager: NSObject, ObservableObject {
 
     // Auto-connect: remember the last device and re-link when it's in range.
     private let lastDeviceKey = "lastDeviceID"
-    private var userInitiatedDisconnect = false
+    /// True after a manual disconnect — this phone won't auto-grab the controller
+    /// again until the user taps Connect or relaunches. Keeps a hand-off from being
+    /// snatched back by the person who just released control. Not persisted.
+    private var autoConnectSuppressed = false
     @Published var autoConnectEnabled: Bool =
         (UserDefaults.standard.object(forKey: "autoConnectEnabled") as? Bool) ?? true {
         didSet { UserDefaults.standard.set(autoConnectEnabled, forKey: "autoConnectEnabled") }
     }
-    /// Release the controller when the app is backgrounded, so another phone can
-    /// take over (hand-off). On by default so the app is a good shared-car citizen.
-    @Published var releaseWhenInactive: Bool =
-        (UserDefaults.standard.object(forKey: "releaseWhenInactive") as? Bool) ?? true {
-        didSet { UserDefaults.standard.set(releaseWhenInactive, forKey: "releaseWhenInactive") }
-    }
+
+    var hasSavedDevice: Bool { UserDefaults.standard.string(forKey: lastDeviceKey) != nil }
 
     // Buffer for reassembling multi-packet frames terminated by 0D 0A.
     private var rxBuffer = Data()
@@ -94,16 +93,24 @@ final class BLEManager: NSObject, ObservableObject {
 
     func connect(_ device: ScannedDevice) {
         guard let p = peripherals[device.id] else { return }
+        autoConnectSuppressed = false        // explicit connect intent
         stopScan()
         connected = p
         p.delegate = self
         central.connect(p, options: nil)
     }
 
-    /// User-initiated disconnect — suppresses auto-reconnect until next launch/scan.
+    /// User taps Disconnect — releases control and stops THIS phone from auto-grabbing
+    /// the controller again until they tap Connect (so the other phone can take over).
     func disconnect() {
-        userInitiatedDisconnect = true
+        autoConnectSuppressed = true
         if let p = connected { central.cancelPeripheralConnection(p) }
+    }
+
+    /// User taps Connect — clears the suppression and re-links to the saved device.
+    func userConnect() {
+        autoConnectSuppressed = false
+        tryAutoConnect()
     }
 
     /// Forget the saved device so this phone stops auto-connecting to it.
@@ -112,10 +119,10 @@ final class BLEManager: NSObject, ObservableObject {
         disconnect()
     }
 
-    /// Re-link to the last device (called when Bluetooth powers on). `connect()`
-    /// has no timeout, so the link completes whenever the controller is in range.
+    /// Re-link to the last device. `connect()` has no timeout, so the link completes
+    /// whenever the controller is in range and free.
     private func tryAutoConnect() {
-        guard autoConnectEnabled, !state.isConnected, connected == nil,
+        guard autoConnectEnabled, !autoConnectSuppressed, !state.isConnected, connected == nil,
               let idStr = UserDefaults.standard.string(forKey: lastDeviceKey),
               let uuid = UUID(uuidString: idStr) else { return }
         if let p = central.retrievePeripherals(withIdentifiers: [uuid]).first {
@@ -126,17 +133,15 @@ final class BLEManager: NSObject, ObservableObject {
         startScan()   // fallback discovery in case the system no longer knows it
     }
 
-    /// App went to background — free the controller for hand-off (temporary;
-    /// auto-connect resumes when the app returns to the foreground).
-    func releaseForBackground() {
-        guard releaseWhenInactive, state.isConnected || connected != nil else { return }
-        userInitiatedDisconnect = true          // don't immediately re-grab on the drop
-        if let p = connected { central.cancelPeripheralConnection(p) }
+    /// App backgrounded — KEEP the controller connection (control stays held); just
+    /// pause polling to save battery.
+    func appDidEnterBackground() {
+        stopPolling()
     }
 
-    /// App returned to foreground — try to re-grab the last controller.
-    func resumeAutoConnect() {
-        tryAutoConnect()
+    /// App foregrounded — resume polling if still connected, else try to reconnect.
+    func appDidBecomeActive() {
+        if state.isConnected { startPolling() } else { tryAutoConnect() }
     }
 
     // MARK: Send
@@ -209,8 +214,9 @@ extension BLEManager: CBCentralManagerDelegate {
             } else {
                 self.discovered.append(dev)
             }
-            // Auto-connect to the last-used device when it reappears.
-            if self.autoConnectEnabled, self.connected == nil, !self.state.isConnected,
+            // Auto-connect to the last-used device when it reappears (and is free).
+            if self.autoConnectEnabled, !self.autoConnectSuppressed,
+               self.connected == nil, !self.state.isConnected,
                UserDefaults.standard.string(forKey: self.lastDeviceKey) == peripheral.identifier.uuidString {
                 self.connect(dev)
             }
@@ -240,14 +246,12 @@ extension BLEManager: CBCentralManagerDelegate {
             self.writeChar = nil
             self.state.isConnected = false
             self.state.reset()
-            let userQuit = self.userInitiatedDisconnect
-            self.userInitiatedDisconnect = false
-            if self.autoConnectEnabled, !userQuit {
-                // Unexpected drop (e.g. out of range): keep a pending connect so it
-                // re-links automatically when the controller is back in range.
+            if self.autoConnectEnabled, !self.autoConnectSuppressed {
+                // Unexpected drop (out of range): keep a pending connect so it re-links
+                // automatically when the controller is back in range and free.
                 self.central.connect(peripheral, options: nil)
             } else {
-                self.connected = nil
+                self.connected = nil    // manual disconnect — stay released for hand-off
             }
         }
     }

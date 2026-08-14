@@ -48,11 +48,8 @@ struct DeviceListScreen: View {
     private var autoConnectToggle: some View {
         VStack(spacing: 10) {
             settingRow("Auto-connect",
-                       "Reconnect to your controller automatically when it's in range.",
+                       "Connect automatically when your controller is in range and free. You keep control until you press Disconnect.",
                        isOn: $ble.autoConnectEnabled)
-            settingRow("Release when app is closed",
-                       "Frees the controller so another phone can take over when you leave the app.",
-                       isOn: $ble.releaseWhenInactive)
         }
         .padding(.horizontal, 20).padding(.bottom, 10)
     }

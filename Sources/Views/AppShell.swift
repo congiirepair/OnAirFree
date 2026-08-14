@@ -46,37 +46,54 @@ struct AppShell: View {
 private struct ToolbarBar: View {
     @EnvironmentObject var nav: NavModel
     @EnvironmentObject var s: SuspensionState
+    @EnvironmentObject var ble: BLEManager
 
     var body: some View {
         HStack(spacing: 12) {
-            Button {
-                nav.screen == .controller ? nav.openMenu() : nav.back()
-            } label: {
-                if nav.screen == .controller {
-                    Hamburger()
-                } else {
+            if nav.screen == .controller {
+                connectButton                       // top-left: Connect / Disconnect
+                Spacer()
+                Button { nav.openMenu() } label: { Hamburger() }   // top-right: menu
+            } else {
+                Button { nav.back() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(OnAirTheme.text)
                         .frame(width: 28, height: 28)
                 }
-            }
-
-            Text(nav.screen.title)
-                .font(.system(size: 17))
-                .foregroundColor(OnAirTheme.text)
-
-            Spacer()
-
-            Button {
-                nav.go(.deviceList)
-            } label: {
-                Image(s.isConnected ? "toolbar_bluetooth" : "toolbar_bluetooth_noconect")
-                    .resizable().scaledToFit().frame(width: 26, height: 26)
+                Text(nav.screen.title)
+                    .font(.system(size: 17))
+                    .foregroundColor(OnAirTheme.text)
+                Spacer()
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
+    }
+
+    private var connectButton: some View {
+        Button {
+            if s.isConnected {
+                ble.disconnect()                    // release control
+            } else if ble.hasSavedDevice {
+                ble.userConnect()                   // re-link to the known controller
+            } else {
+                nav.go(.deviceList)                 // first time: pick a device
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Circle().fill(s.isConnected ? Color.green : OnAirTheme.gray)
+                    .frame(width: 8, height: 8)
+                Text(s.isConnected ? "Disconnect" : "Connect")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 14).frame(height: 34)
+            .background(Capsule().fill(s.isConnected ? OnAirTheme.violet.opacity(0.30)
+                                                     : Color.white.opacity(0.06)))
+            .overlay(Capsule().stroke(OnAirTheme.violet.opacity(0.55), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 }
 

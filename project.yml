@@ -40,8 +40,10 @@ targets:
       properties:
         CFBundleDisplayName: OnAir
         ITSAppUsesNonExemptEncryption: false   # no custom crypto -> skips TestFlight compliance prompt
-        NSBluetoothAlwaysUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
-        NSBluetoothPeripheralUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
+        UIBackgroundModes:
+          - bluetooth-central                  # keep the controller connection alive in the background
+        NSBluetoothAlwaysUsageDescription: "OnAir stays connected to your air-suspension controller, including in the background, so you keep control until you disconnect."
+        NSBluetoothPeripheralUsageDescription: "OnAir stays connected to your air-suspension controller, including in the background, so you keep control until you disconnect."
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

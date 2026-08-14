@@ -25,8 +25,8 @@ struct RootView: View {
         .animation(.default, value: selectedModel)
         .onChange(of: scenePhase) { _, phase in
             switch phase {
-            case .background: ble.releaseForBackground()   // free controller for hand-off
-            case .active:     ble.resumeAutoConnect()      // re-grab it when back in front
+            case .background: ble.appDidEnterBackground()   // keep connection, pause polling
+            case .active:     ble.appDidBecomeActive()      // resume polling / reconnect
             default: break
             }
         }
