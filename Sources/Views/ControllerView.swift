@@ -12,6 +12,7 @@ struct ControllerView: View {
     @EnvironmentObject var ble: BLEManager
     @EnvironmentObject var s: SuspensionState
     @AppStorage("selectedModel") private var selectedModel = "model3"
+    @State private var showHighWarning = false
 
     private var car: CarModel { CarModels.by(id: selectedModel) }
 
@@ -38,6 +39,9 @@ struct ControllerView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .offset(y: geo.size.height * 0.02)
+            }
+            .alert("Slow below 40 before raising to HIGH.", isPresented: $showHighWarning) {
+                Button("OK", role: .cancel) {}
             }
         }
     }
@@ -105,7 +109,12 @@ struct ControllerView: View {
                      _ cmd: String, _ scale: CGFloat) -> some View {
         let active = s.height == h
         return Button {
-            ble.send(cmd)
+            // Safety guard from the original: block HIGH while Smart Speed is on and moving fast.
+            if h == .high, s.smartSpeedMode, s.currentSpeed > 40 {
+                showHighWarning = true
+            } else {
+                ble.send(cmd)
+            }
         } label: {
             Text(title)
                 .font(.system(size: 15 * scale, weight: .semibold))
@@ -135,6 +144,8 @@ struct ControllerView: View {
             }
         }
         .frame(width: 280 * scale)
+        .opacity(s.isRepairMode ? 0.4 : 1)          // controls are locked in Service Mode
+        .allowsHitTesting(!s.isRepairMode)
     }
 }
 

@@ -49,6 +49,7 @@ final class BLEManager: NSObject, ObservableObject {
     private var connected: CBPeripheral?
     private var writeChar: CBCharacteristic?
     private var writeType: CBCharacteristicWriteType = .withoutResponse
+    private var pollTask: Task<Void, Never>?
 
     // Buffer for reassembling multi-packet frames terminated by 0D 0A.
     private var rxBuffer = Data()
@@ -99,6 +100,29 @@ final class BLEManager: NSObject, ObservableObject {
         }
         p.writeValue(commandHex.onairHexData, for: c, type: writeType)
     }
+
+    // MARK: Status polling (mirrors the Android AutogetAir loop)
+
+    /// While connected, continuously re-query full device status + air pressure
+    /// so height, auto, service mode, smart-speed, faults and pressure stay live.
+    private func startPolling() {
+        pollTask?.cancel()
+        pollTask = Task { @MainActor in
+            while !Task.isCancelled {
+                if self.connected != nil, self.writeChar != nil {
+                    self.send(OnAirCommand.getDeviceInfo)         // FC: height/auto/repair/smart-speed/level
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    self.send(OnAirCommand.getAirBottlePressure)  // F4: tank pressure + speed
+                }
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+            }
+        }
+    }
+
+    private func stopPolling() {
+        pollTask?.cancel()
+        pollTask = nil
+    }
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -110,6 +134,7 @@ extension BLEManager: CBCentralManagerDelegate {
         Task { @MainActor in
             self.bluetoothReady = poweredOn
             if !poweredOn {
+                self.stopPolling()
                 self.state.isConnected = false
                 self.state.reset()
             }
@@ -145,13 +170,17 @@ extension BLEManager: CBCentralManagerDelegate {
                                     didFailToConnect peripheral: CBPeripheral,
                                     error: Error?) {
         let message = error?.localizedDescription ?? "Failed to connect"
-        Task { @MainActor in self.lastError = message }
+        Task { @MainActor in
+            self.connected = nil          // clear the stale peripheral after a failed attempt
+            self.lastError = message
+        }
     }
 
     nonisolated func centralManager(_ central: CBCentralManager,
                                     didDisconnectPeripheral peripheral: CBPeripheral,
                                     error: Error?) {
         Task { @MainActor in
+            self.stopPolling()
             self.writeChar = nil
             self.connected = nil
             self.state.isConnected = false
@@ -195,10 +224,11 @@ extension BLEManager: CBPeripheralDelegate {
                 self.writeChar = writeToSet
                 self.writeType = typeToSet
             }
-            if self.writeChar != nil, self.connected != nil {
+            // Guard on !isConnected so a device exposing both services only inits once.
+            if self.writeChar != nil, self.connected != nil, !self.state.isConnected {
                 self.state.isConnected = true
                 self.state.connectedName = name
-                self.send(OnAirCommand.getDeviceInfo)   // initial status pull, like Android onStart
+                self.startPolling()                     // continuous status refresh
             }
         }
     }

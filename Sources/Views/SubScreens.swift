@@ -35,7 +35,7 @@ struct AllDownScreen: View {
     @EnvironmentObject var s: SuspensionState
     var body: some View {
         screenBG {
-            Text("All Down lets you dump all struts to their lowest point. Enable it here, then hold the All Down button on the controller for 5 seconds.")
+            Text("All Down lets you dump all struts to their lowest point. Enable it here, then triple-tap the All Down button on the controller to activate.")
                 .font(.subheadline).foregroundColor(OnAirTheme.gray)
             HStack {
                 Text("All Down enabled").foregroundColor(OnAirTheme.text)
@@ -97,33 +97,22 @@ struct AirTankScreen: View {
     @EnvironmentObject var ble: BLEManager
     @EnvironmentObject var s: SuspensionState
 
-    private let presets: [(String, String)] = [
-        ("1", OnAirCommand.setValue1), ("2", OnAirCommand.setValue2),
-        ("3", OnAirCommand.setValue3), ("4", OnAirCommand.setValue4),
-        ("5", OnAirCommand.setValue5),
-    ]
-
     var body: some View {
         screenBG {
             Image("air_tank_pressure").resizable().scaledToFit().frame(height: 90)
             HStack(spacing: 6) {
-                Text(s.airPressure).font(.system(size: 48, weight: .bold))
+                Text(s.airPressure).font(.system(size: 52, weight: .bold))
                     .foregroundColor(OnAirTheme.text)
                 Text("PSI").font(.headline).foregroundColor(OnAirTheme.gray)
             }
-            PillButton(title: "Refresh") { ble.send(OnAirCommand.getAirBottlePressure) }
-
-            Text("Set target level").font(.subheadline).foregroundColor(OnAirTheme.gray)
-            HStack(spacing: 10) {
-                ForEach(presets, id: \.0) { p in
-                    Button(p.0) { ble.send(p.1) }
-                        .font(.headline).foregroundColor(OnAirTheme.text)
-                        .frame(width: 48, height: 48)
-                        .overlay(Circle().stroke(OnAirTheme.buttonLine, lineWidth: 2))
-                }
+            Text("Force the system to build air pressure in the tank.")
+                .font(.subheadline).foregroundColor(OnAirTheme.gray)
+                .multilineTextAlignment(.center)
+            // Matches MenuAirTankPressureFragment: the one control is "force to air" (BD).
+            PillButton(title: "Force to Air", tint: OnAirTheme.violet) {
+                ble.send(OnAirCommand.forcedToAir)
             }
         }
-        .onAppear { ble.send(OnAirCommand.getAirBottlePressure) }
     }
 }
 
@@ -136,15 +125,20 @@ struct SmartSpeedScreen: View {
         screenBG {
             Text("Smart Speed automatically lowers the vehicle as speed increases for better stability.")
                 .font(.subheadline).foregroundColor(OnAirTheme.gray)
-            HStack {
-                Text("Smart Speed").foregroundColor(OnAirTheme.text)
-                Spacer()
-                Text(s.smartSpeedMode ? "ON" : "OFF")
-                    .foregroundColor(s.smartSpeedMode ? OnAirTheme.accent : OnAirTheme.gray)
-            }
-            PillButton(title: s.smartSpeedMode ? "Turn Off" : "Turn On",
-                       tint: s.smartSpeedMode ? OnAirTheme.gray : OnAirTheme.accent) {
-                ble.send(s.smartSpeedMode ? OnAirCommand.smartSpendOff : OnAirCommand.smartSpendOn)
+            if s.smartSpeedEnable {
+                HStack {
+                    Text("Smart Speed").foregroundColor(OnAirTheme.text)
+                    Spacer()
+                    Text(s.smartSpeedMode ? "ON" : "OFF")
+                        .foregroundColor(s.smartSpeedMode ? OnAirTheme.violet : OnAirTheme.gray)
+                }
+                PillButton(title: s.smartSpeedMode ? "Turn Off" : "Turn On",
+                           tint: s.smartSpeedMode ? OnAirTheme.gray : OnAirTheme.violet) {
+                    ble.send(s.smartSpeedMode ? OnAirCommand.smartSpendOff : OnAirCommand.smartSpendOn)
+                }
+            } else {
+                Text("Not supported on this controller.")
+                    .foregroundColor(OnAirTheme.gray).padding(.top, 12)
             }
         }
     }

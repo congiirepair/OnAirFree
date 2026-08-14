@@ -88,6 +88,7 @@ enum OnAirResponse {
     static let deviceStatePrefix = "40 41 50 50 FC"  // full device status
     static let warningPrefix    = "40 41 50 50 FD"   // fault flags
     static let autoPrefix       = "40 41 50 50 F2"   // auto on/off
+    static let repairPrefix     = "40 41 50 50 F3"   // service/repair mode on/off
     static let smartSpendPrefix = "40 41 50 50 A0"   // smart-spend on
 }
 

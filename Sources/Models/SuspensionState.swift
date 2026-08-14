@@ -113,13 +113,19 @@ enum FrameParser {
             s.warnBackHeightSensor  = s3 & 2 == 2
             s.warnAirTank           = s4 & 1 == 1
             s.warnAirPump           = s5 & 1 == 1
-            s.warnDevice            = (s5 & 2 == 2) || (s5 & 4 == 4)
+            s.warnDevice            = s5 & 4 == 4       // matches UtilsViewStatus (2nd setIsDvcWarining wins)
             s.warnMcu               = s6 & 1 == 1
 
         } else if hex.contains(OnAirResponse.autoPrefix) {          // 40 41 50 50 F2
             // "close auto" is the ...02 variant; anything else = auto on
             s.isAuto = !hex.trimmingCharacters(in: .whitespaces)
                 .hasSuffix("F2 00 00 00 02 0D 0A")
+
+        } else if hex.contains(OnAirResponse.repairPrefix) {        // 40 41 50 50 F3
+            s.isRepairMode = hex.contains("F3 00 00 00 01")         // ...01 open, ...02 close
+
+        } else if hex.contains(OnAirResponse.smartSpendPrefix) {    // 40 41 50 50 A0
+            s.smartSpeedMode = hex.contains("A0 00 00 00 01")
         }
     }
 
