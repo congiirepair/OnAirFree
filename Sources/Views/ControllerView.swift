@@ -26,7 +26,6 @@ struct ControllerView: View {
             OnAirTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                topBar
                 Spacer(minLength: 8)
 
                 Image("image_onair").resizable().scaledToFit()
@@ -69,27 +68,6 @@ struct ControllerView: View {
                 Spacer(minLength: 28)
             }
         }
-    }
-
-    // MARK: Top bar (title + connection)
-
-    private var topBar: some View {
-        HStack {
-            Text(s.connectedName.isEmpty ? "OnAir" : s.connectedName)
-                .font(.headline).foregroundColor(OnAirTheme.text)
-            Spacer()
-            Button {
-                ble.send(OnAirCommand.getAirBottlePressure)
-            } label: {
-                Image(systemName: "arrow.clockwise").foregroundColor(OnAirTheme.gray)
-            }
-            Button(role: .destructive) {
-                ble.disconnect()
-            } label: {
-                Image(systemName: "xmark.circle").foregroundColor(OnAirTheme.gray)
-            }
-        }
-        .padding(.horizontal, 20).padding(.top, 8)
     }
 
     // MARK: Low / OnAir / High

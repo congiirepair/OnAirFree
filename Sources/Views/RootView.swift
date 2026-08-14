@@ -16,13 +16,11 @@ struct RootView: View {
             if selectedModel.isEmpty {
                 // First launch after install — choose your car model (like the Android app).
                 ModelPickerView(selectedModel: $selectedModel)
-            } else if state.isConnected {
-                ControllerView()
             } else {
-                ScanView()
+                // Controller is the default; the shell's toolbar handles menu + connect.
+                AppShell()
             }
         }
         .animation(.default, value: selectedModel)
-        .animation(.default, value: state.isConnected)
     }
 }
