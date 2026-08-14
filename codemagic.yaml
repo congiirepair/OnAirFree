@@ -38,6 +38,8 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 30
     environment:
+      groups:
+        - github        # must contain GH_TOKEN: a GitHub PAT with contents:write on the repo
       xcode: latest
     scripts:
       - name: Install XcodeGen if needed
@@ -64,10 +66,20 @@ workflows:
           zip -r "OnAirFree-unsigned.ipa" "Payload"
           rm -rf Payload
           echo "Built:" && ls -lh OnAirFree-unsigned.ipa
+      - name: Publish to a stable GitHub Release (public download URL)
+        script: |
+          cd build
+          REPO="congiirepair/OnAirFree"
+          # Keep one "sideload" release updated so the download URL never changes.
+          gh release create sideload "OnAirFree-unsigned.ipa" \
+            --repo "$REPO" --title "OnAir (sideload)" \
+            --notes "Unsigned IPA for Sideloadly / SideStore / iLoader. Latest build." \
+          || gh release upload sideload "OnAirFree-unsigned.ipa" --repo "$REPO" --clobber
+          echo "Public URL: https://github.com/$REPO/releases/download/sideload/OnAirFree-unsigned.ipa"
     artifacts:
       - build/*.ipa
-    # Download the .ipa from the build's Artifacts section, then sign+install
-    # it with Sideloadly using your Apple ID (free = 7 days, paid = 1 year).
+    # Also downloadable from the build's Artifacts section. The GitHub Release
+    # step above gives a permanent public URL for SideStore/iLoader install.
 
   # ---------------------------------------------------------------------------
   ios-testflight:
