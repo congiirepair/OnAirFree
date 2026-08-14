@@ -109,7 +109,7 @@ struct AirTankScreen: View {
                 .font(.subheadline).foregroundColor(OnAirTheme.gray)
                 .multilineTextAlignment(.center)
             // Matches MenuAirTankPressureFragment: the one control is "force to air" (BD).
-            PillButton(title: "Force to Air", tint: OnAirTheme.violet) {
+            PillButton(title: "Force to Air", tint: OnAirTheme.mono) {
                 ble.send(OnAirCommand.forcedToAir)
             }
         }
@@ -130,10 +130,10 @@ struct SmartSpeedScreen: View {
                     Text("Smart Speed").foregroundColor(OnAirTheme.text)
                     Spacer()
                     Text(s.smartSpeedMode ? "ON" : "OFF")
-                        .foregroundColor(s.smartSpeedMode ? OnAirTheme.violet : OnAirTheme.gray)
+                        .foregroundColor(s.smartSpeedMode ? OnAirTheme.mono : OnAirTheme.gray)
                 }
                 PillButton(title: s.smartSpeedMode ? "Turn Off" : "Turn On",
-                           tint: s.smartSpeedMode ? OnAirTheme.gray : OnAirTheme.violet) {
+                           tint: s.smartSpeedMode ? OnAirTheme.gray : OnAirTheme.mono) {
                     ble.send(s.smartSpeedMode ? OnAirCommand.smartSpendOff : OnAirCommand.smartSpendOn)
                 }
             } else {

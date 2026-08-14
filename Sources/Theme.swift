@@ -1,7 +1,7 @@
 //
 //  Theme.swift
-//  Colors ported from the original app's res/values/colors.xml so the iOS
-//  build matches the Android dark theme exactly.
+//  Black & white / carbon-fiber theme. The `mono*` tokens are the monochrome
+//  accent used for rings, text, glows and selected states.
 //
 
 import SwiftUI
@@ -16,27 +16,27 @@ extension Color {
     }
 }
 
-/// The OnAir palette (values from colors.xml).
 enum OnAirTheme {
-    static let background   = Color(hex: 0x161719)   // colorBackground / black
-    static let primary      = Color(hex: 0x232C37)   // colorPrimary(Dark)
-    static let accent       = Color(hex: 0x1E90FF)   // btntextcolor (dodger blue)
-    static let blue         = Color(hex: 0x123256)   // blue
-    static let gray         = Color(hex: 0x8B97A6)   // colorGray
-    static let divider      = Color(hex: 0x5A6573)   // colorDivider
-    static let line         = Color(hex: 0x37393B)   // color_line
-    static let buttonLine   = Color(hex: 0xBBBBBB)   // color_butten_line
-    static let menuLine      = Color(hex: 0xBCC3C7)  // color_menu_line / editext
-    static let text         = Color.white            // color_text
-    static let deviceItemBg = Color(hex: 0x8B97A6).opacity(0.53) // colorDeviceListItemBg (#888b97a6)
+    // Core surfaces
+    static let background   = Color(hex: 0x0A0A0A)   // near-black
+    static let text         = Color.white
+    static let gray         = Color(hex: 0x8A8A8A)   // neutral gray
+    static let divider      = Color(hex: 0x2A2A2A)
+    static let line         = Color(hex: 0x333333)
+    static let buttonLine   = Color(hex: 0xBBBBBB)
+    static let menuLine     = Color(hex: 0xC8C8C8)
+    static let deviceItemBg = Color(white: 0.14)
     static let errorText    = Color.white
+    static let primary      = Color(hex: 0x1A1A1A)
+    static let blue         = Color(hex: 0x2A2A2A)
+    static let accent       = Color.white            // B&W accent (buttons/pills)
 
-    // MARK: Futuristic space theme (violet)
-    static let spaceTop    = Color(hex: 0x1A0F2E)   // deep violet-navy (top of gradient)
-    static let spaceMid    = Color(hex: 0x0C0818)
-    static let spaceBottom = Color(hex: 0x040308)   // near black (bottom)
-    static let violet      = Color(hex: 0xA855F7)   // primary neon accent
-    static let violetLight = Color(hex: 0xC084FC)
-    static let violetGlow  = Color(hex: 0xD946EF)   // brightest highlight/glow
-    static let starColor   = Color(red: 0.86, green: 0.85, blue: 1.0)
+    // Monochrome accent (rings, text, glows, selected) — replaces the old violet.
+    static let mono      = Color.white
+    static let monoSoft  = Color(white: 0.72)
+    static let monoGlow  = Color.white
+
+    // Carbon surfaces
+    static let carbon    = Color(hex: 0x0C0C0C)
+    static let panel     = Color(white: 0.11)
 }

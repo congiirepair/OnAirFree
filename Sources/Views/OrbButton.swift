@@ -1,11 +1,13 @@
 //
 //  OrbButton.swift
-//  A circular control with depth — convex gradient, top sheen, outer ring, and a
-//  lift shadow. When `selected` it fills violet, glows, and scales up so the chosen
-//  mode is unmistakable. Used by Low / OnAir / High / Auto / All Down.
+//  A metallic circular control that pairs with the carbon-fiber theme: domed
+//  gunmetal face, beveled rim (light top → dark bottom), glossy sheen, and a
+//  lift shadow for depth. It's engageable — presses in (scale + darken) with a
+//  haptic tap, and lights up bright white when its mode is selected.
 //
 
 import SwiftUI
+import UIKit
 
 struct OrbButton<Content: View>: View {
     var selected: Bool
@@ -15,38 +17,55 @@ struct OrbButton<Content: View>: View {
     let action: () -> Void
     @ViewBuilder var content: () -> Content
 
+    @State private var pressed = false
+
     var body: some View {
         ZStack {
-            // Convex base: lighter top → darker bottom reads as a raised dome.
+            // Domed metal face — dark gunmetal, or bright when selected.
             Circle()
                 .fill(LinearGradient(
                     colors: selected
-                        ? [OnAirTheme.violet.opacity(0.95), OnAirTheme.violet.opacity(0.40)]
-                        : [Color(white: 0.17), Color(white: 0.05)],
+                        ? [Color(white: 0.98), Color(white: 0.72)]
+                        : [Color(white: 0.24), Color(white: 0.055)],
                     startPoint: .top, endPoint: .bottom))
 
-            // Top sheen — light catching the upper edge.
+            // Glossy top sheen.
             Circle()
-                .stroke(LinearGradient(
-                    colors: [Color.white.opacity(selected ? 0.6 : 0.32), .clear],
-                    startPoint: .top, endPoint: .center),
-                    lineWidth: 1.5)
+                .fill(RadialGradient(
+                    colors: [Color.white.opacity(selected ? 0.7 : 0.30), .clear],
+                    center: UnitPoint(x: 0.5, y: 0.28), startRadius: 0, endRadius: size * 0.55))
 
-            // Outer ring (brighter when chosen).
+            // Beveled rim: light top edge → dark bottom edge = raised metal.
             Circle()
-                .stroke(OnAirTheme.violet.opacity(selected ? 1 : 0.5),
-                        lineWidth: selected ? 2.5 : 1.5)
+                .strokeBorder(LinearGradient(
+                    colors: [Color.white.opacity(0.55), Color.black.opacity(0.7)],
+                    startPoint: .top, endPoint: .bottom), lineWidth: 3)
+
+            // Thin definition ring inside the rim.
+            Circle()
+                .stroke(selected ? Color.black.opacity(0.22) : Color.white.opacity(0.32), lineWidth: 1)
+                .padding(3)
 
             content()
         }
         .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.55), radius: 6, y: 4)                        // lift/depth
-        .shadow(color: OnAirTheme.violet.opacity(selected ? 0.85 : 0), radius: 16)   // glow when chosen
-        .scaleEffect(selected ? 1.06 : 1.0)
+        .shadow(color: .black.opacity(0.6), radius: pressed ? 3 : 8, y: pressed ? 1 : 5)   // lift
+        .shadow(color: Color.white.opacity(selected ? 0.5 : 0), radius: 16)                 // glow when chosen
+        .brightness(pressed ? -0.06 : 0)
+        .scaleEffect(pressed ? 0.93 : (selected ? 1.05 : 1.0))
         .opacity(enabled ? 1 : 0.4)
         .allowsHitTesting(enabled)
         .contentShape(Circle())
-        .onTapGesture(count: tapCount) { action() }
+        .animation(.spring(response: 0.25, dampingFraction: 0.55), value: pressed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: selected)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in if !pressed { pressed = true } }
+                .onEnded { _ in pressed = false }
+        )
+        .onTapGesture(count: tapCount) {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            action()
+        }
     }
 }

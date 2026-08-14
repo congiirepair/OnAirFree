@@ -41,7 +41,7 @@ struct MenuScreen: View {
             Text("MENU")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
-                .shadow(color: OnAirTheme.violet.opacity(0.8), radius: 10)
+                .shadow(color: OnAirTheme.mono.opacity(0.8), radius: 10)
             Spacer()
         }
         .padding(.vertical, 8)
@@ -60,11 +60,11 @@ struct MenuScreen: View {
         } label: {
             HStack(spacing: 14) {
                 ZStack {
-                    Circle().fill(OnAirTheme.violet.opacity(0.18)).frame(width: 42, height: 42)
-                    Circle().stroke(OnAirTheme.violet.opacity(0.5), lineWidth: 1).frame(width: 42, height: 42)
+                    Circle().fill(OnAirTheme.mono.opacity(0.18)).frame(width: 42, height: 42)
+                    Circle().stroke(OnAirTheme.mono.opacity(0.5), lineWidth: 1).frame(width: 42, height: 42)
                     Image(systemName: entry.icon)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(OnAirTheme.violetLight)
+                        .foregroundColor(OnAirTheme.monoSoft)
                 }
                 Text(entry.title)
                     .font(.system(size: 17, weight: .medium))
@@ -75,7 +75,7 @@ struct MenuScreen: View {
                 }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(OnAirTheme.violet.opacity(0.85))
+                    .foregroundColor(OnAirTheme.mono.opacity(0.85))
             }
             .padding(.horizontal, 16)
             .frame(height: 64)
@@ -84,10 +84,10 @@ struct MenuScreen: View {
                     .fill(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(OnAirTheme.violet.opacity(0.3), lineWidth: 1)
+                            .stroke(OnAirTheme.mono.opacity(0.3), lineWidth: 1)
                     )
             )
-            .shadow(color: OnAirTheme.violet.opacity(0.18), radius: 10, y: 3)
+            .shadow(color: OnAirTheme.mono.opacity(0.18), radius: 10, y: 3)
         }
         .buttonStyle(.plain)
     }

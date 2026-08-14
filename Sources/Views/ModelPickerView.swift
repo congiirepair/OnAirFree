@@ -13,7 +13,7 @@ struct ModelPickerView: View {
 
     var body: some View {
         ZStack {
-            SpaceBackground()
+            CarbonBackground()
 
             GeometryReader { geo in
                 VStack(spacing: 18) {

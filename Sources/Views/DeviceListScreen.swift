@@ -61,14 +61,14 @@ struct DeviceListScreen: View {
                 Text(subtitle).font(.caption).foregroundColor(OnAirTheme.gray)
             }
             Spacer()
-            Toggle("", isOn: isOn).labelsHidden().tint(OnAirTheme.violet)
+            Toggle("", isOn: isOn).labelsHidden().tint(OnAirTheme.mono)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(OnAirTheme.violet.opacity(0.25), lineWidth: 1))
+                    .stroke(OnAirTheme.mono.opacity(0.25), lineWidth: 1))
         )
     }
 

@@ -14,10 +14,10 @@ struct AppShell: View {
 
     var body: some View {
         ZStack {
-            SpaceBackground()
+            CarbonBackground()
             VStack(spacing: 0) {
                 ToolbarBar()
-                Divider().background(OnAirTheme.violet.opacity(0.25))
+                Divider().background(OnAirTheme.mono.opacity(0.25))
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -56,10 +56,10 @@ private struct ToolbarBar: View {
                 if !modeLabel.isEmpty {             // top-right: current mode
                     Text(modeLabel)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(OnAirTheme.violetLight)
+                        .foregroundColor(OnAirTheme.monoSoft)
                         .padding(.horizontal, 11).padding(.vertical, 5)
-                        .background(Capsule().fill(OnAirTheme.violet.opacity(0.18))
-                            .overlay(Capsule().stroke(OnAirTheme.violet.opacity(0.4), lineWidth: 1)))
+                        .background(Capsule().fill(OnAirTheme.mono.opacity(0.18))
+                            .overlay(Capsule().stroke(OnAirTheme.mono.opacity(0.4), lineWidth: 1)))
                         .transition(.opacity)
                 }
                 Button { nav.openMenu() } label: { Hamburger() }   // top-right: menu
@@ -109,9 +109,9 @@ private struct ToolbarBar: View {
                     .foregroundColor(.white)
             }
             .padding(.horizontal, 14).frame(height: 34)
-            .background(Capsule().fill(s.isConnected ? OnAirTheme.violet.opacity(0.30)
+            .background(Capsule().fill(s.isConnected ? OnAirTheme.mono.opacity(0.30)
                                                      : Color.white.opacity(0.06)))
-            .overlay(Capsule().stroke(OnAirTheme.violet.opacity(0.55), lineWidth: 1))
+            .overlay(Capsule().stroke(OnAirTheme.mono.opacity(0.55), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
