@@ -13,7 +13,7 @@ struct DeviceListScreen: View {
 
     var body: some View {
         ZStack {
-            OnAirTheme.background.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()      // starfield (from AppShell) shows through
             VStack(spacing: 0) {
                 if !ble.bluetoothReady {
                     info("Bluetooth is off", "Turn on Bluetooth to find your OnAir controller.")

@@ -1,8 +1,8 @@
 //
 //  MenuScreen.swift
-//  The main menu list (mirrors fragment_menu / MenuFragment). Items that need a
-//  live connection show a prompt when disconnected. Engineer/Debug are hidden
-//  until a triple-tap on the header, like the original.
+//  Futuristic menu — frosted-glass rows with glowing violet icons, floating
+//  over the animated starfield (from AppShell). Triple-tap the title reveals
+//  Engineer/Debug, like the original. Connection-required items prompt first.
 //
 
 import SwiftUI
@@ -21,51 +21,74 @@ struct MenuScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                // Triple-tap header reveals Engineer/Debug (matches the original).
-                Color.clear
-                    .frame(height: 10)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        tapCount += 1
-                        if tapCount >= 3 { revealHidden.toggle(); tapCount = 0 }
-                    }
-
-                ForEach(entries) { entry in
-                    Button {
-                        if entry.requiresConnection && !s.isConnected {
-                            showConnectAlert = true
-                        } else {
-                            nav.go(entry.screen)
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(entry.title)
-                                .font(.system(size: 16))
-                                .foregroundColor(OnAirTheme.text)
-                            if entry.screen == .errorNotification && s.anyWarning {
-                                Image("menu_system_display_warning")
-                                    .resizable().frame(width: 18, height: 18)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13))
-                                .foregroundColor(OnAirTheme.gray)
-                        }
-                        .padding(.horizontal, 22)
-                        .frame(height: 54)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    Divider().background(OnAirTheme.line)
-                }
+            VStack(spacing: 14) {
+                header
+                ForEach(entries) { row($0) }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 6)
+            .padding(.bottom, 40)
         }
-        .background(OnAirTheme.background)
-        .alert("Connect to your OnAir device first.",
-               isPresented: $showConnectAlert) {
+        .scrollIndicators(.hidden)
+        .alert("Connect to your OnAir device first.", isPresented: $showConnectAlert) {
             Button("Connect") { nav.go(.deviceList) }
             Button("OK", role: .cancel) {}
         }
+    }
+
+    private var header: some View {
+        HStack {
+            Text("MENU")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .shadow(color: OnAirTheme.violet.opacity(0.8), radius: 10)
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {                          // triple-tap reveals Engineer/Debug
+            tapCount += 1
+            if tapCount >= 3 { withAnimation { revealHidden.toggle() }; tapCount = 0 }
+        }
+    }
+
+    private func row(_ entry: MenuEntry) -> some View {
+        let warn = entry.screen == .errorNotification && s.anyWarning
+        return Button {
+            if entry.requiresConnection && !s.isConnected { showConnectAlert = true }
+            else { nav.go(entry.screen) }
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(OnAirTheme.violet.opacity(0.18)).frame(width: 42, height: 42)
+                    Circle().stroke(OnAirTheme.violet.opacity(0.5), lineWidth: 1).frame(width: 42, height: 42)
+                    Image(systemName: entry.icon)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(OnAirTheme.violetLight)
+                }
+                Text(entry.title)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.white)
+                Spacer()
+                if warn {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(OnAirTheme.violet.opacity(0.85))
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 64)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(OnAirTheme.violet.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .shadow(color: OnAirTheme.violet.opacity(0.18), radius: 10, y: 3)
+        }
+        .buttonStyle(.plain)
     }
 }

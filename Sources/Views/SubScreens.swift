@@ -9,12 +9,10 @@ import SwiftUI
 // Small shared building blocks -------------------------------------------------
 
 private func screenBG<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-    ZStack {
-        OnAirTheme.background.ignoresSafeArea()
-        VStack(spacing: 22) { content() }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.top, 28).padding(.horizontal, 24)
-    }
+    // Transparent — the AppShell's animated starfield shows through.
+    VStack(spacing: 22) { content() }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 28).padding(.horizontal, 24)
 }
 
 private struct PillButton: View {

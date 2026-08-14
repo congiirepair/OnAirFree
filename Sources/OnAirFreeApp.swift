@@ -14,6 +14,7 @@ struct OnAirFreeApp: App {
             RootView()
                 .environmentObject(ble)
                 .environmentObject(ble.state)   // nested state observed directly by views
+                .preferredColorScheme(.dark)    // dark frosted materials + consistent theme
         }
     }
 }

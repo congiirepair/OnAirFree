@@ -43,22 +43,23 @@ final class NavModel: ObservableObject {
 struct MenuEntry: Identifiable {
     let id = UUID()
     let title: String
+    let icon: String          // SF Symbol
     let screen: Screen
     let requiresConnection: Bool
     let hidden: Bool          // engineer/debug: revealed by a triple-tap
 
     static let all: [MenuEntry] = [
-        MenuEntry(title: "Bluetooth",         screen: .deviceList,        requiresConnection: false, hidden: false),
-        MenuEntry(title: "Language",          screen: .language,          requiresConnection: false, hidden: false),
-        MenuEntry(title: "Smart Speed",       screen: .smartSpeed,        requiresConnection: false, hidden: false),
-        MenuEntry(title: "Air Tank Pressure", screen: .airTank,           requiresConnection: true,  hidden: false),
-        MenuEntry(title: "Service Mode",      screen: .serviceMode,       requiresConnection: true,  hidden: false),
-        MenuEntry(title: "Error Notification",screen: .errorNotification, requiresConnection: false, hidden: false),
-        MenuEntry(title: "Guide",             screen: .guide,             requiresConnection: false, hidden: false),
-        MenuEntry(title: "My Account",        screen: .myAccount,         requiresConnection: false, hidden: false),
-        MenuEntry(title: "All Down",          screen: .allDown,           requiresConnection: true,  hidden: false),
-        MenuEntry(title: "Factory Reset",     screen: .factoryReset,      requiresConnection: true,  hidden: false),
-        MenuEntry(title: "Engineer Mode",     screen: .engineer,          requiresConnection: false, hidden: true),
-        MenuEntry(title: "Debug Mode",        screen: .debug,             requiresConnection: false, hidden: true),
+        MenuEntry(title: "Bluetooth",         icon: "dot.radiowaves.left.and.right", screen: .deviceList,        requiresConnection: false, hidden: false),
+        MenuEntry(title: "Language",          icon: "globe",                         screen: .language,          requiresConnection: false, hidden: false),
+        MenuEntry(title: "Smart Speed",       icon: "speedometer",                   screen: .smartSpeed,        requiresConnection: false, hidden: false),
+        MenuEntry(title: "Air Tank Pressure", icon: "gauge.medium",                  screen: .airTank,           requiresConnection: true,  hidden: false),
+        MenuEntry(title: "Service Mode",      icon: "wrench.and.screwdriver.fill",   screen: .serviceMode,       requiresConnection: true,  hidden: false),
+        MenuEntry(title: "Error Notification",icon: "exclamationmark.triangle.fill", screen: .errorNotification, requiresConnection: false, hidden: false),
+        MenuEntry(title: "Guide",             icon: "book.fill",                     screen: .guide,             requiresConnection: false, hidden: false),
+        MenuEntry(title: "My Account",        icon: "person.crop.circle",            screen: .myAccount,         requiresConnection: false, hidden: false),
+        MenuEntry(title: "All Down",          icon: "arrow.down.to.line",            screen: .allDown,           requiresConnection: true,  hidden: false),
+        MenuEntry(title: "Factory Reset",     icon: "arrow.counterclockwise",        screen: .factoryReset,      requiresConnection: true,  hidden: false),
+        MenuEntry(title: "Engineer Mode",     icon: "gearshape.2.fill",              screen: .engineer,          requiresConnection: false, hidden: true),
+        MenuEntry(title: "Debug Mode",        icon: "ladybug.fill",                  screen: .debug,             requiresConnection: false, hidden: true),
     ]
 }

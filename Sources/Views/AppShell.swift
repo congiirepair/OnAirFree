@@ -105,6 +105,5 @@ struct ComingSoonScreen: View {
                 .font(.subheadline).foregroundColor(OnAirTheme.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(OnAirTheme.background)
     }
 }
