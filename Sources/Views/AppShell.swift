@@ -53,6 +53,15 @@ private struct ToolbarBar: View {
             if nav.screen == .controller {
                 connectButton                       // top-left: Connect / Disconnect
                 Spacer()
+                if !modeLabel.isEmpty {             // top-right: current mode
+                    Text(modeLabel)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(OnAirTheme.violetLight)
+                        .padding(.horizontal, 11).padding(.vertical, 5)
+                        .background(Capsule().fill(OnAirTheme.violet.opacity(0.18))
+                            .overlay(Capsule().stroke(OnAirTheme.violet.opacity(0.4), lineWidth: 1)))
+                        .transition(.opacity)
+                }
                 Button { nav.openMenu() } label: { Hamburger() }   // top-right: menu
             } else {
                 Button { nav.back() } label: {
@@ -69,6 +78,17 @@ private struct ToolbarBar: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
+    }
+
+    private var modeLabel: String {
+        if s.isAuto { return "Auto" }
+        switch s.height {
+        case .low:     return "Low"
+        case .onair:   return "On Air"
+        case .high:    return "High"
+        case .allDown: return "All Down"
+        default:       return ""
+        }
     }
 
     private var connectButton: some View {
