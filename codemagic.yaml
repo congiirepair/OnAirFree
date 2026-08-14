@@ -68,6 +68,7 @@ workflows:
           echo "Built:" && ls -lh OnAirFree-unsigned.ipa
       - name: Publish to a stable GitHub Release (public download URL)
         script: |
+          which gh || brew install gh
           cd build
           REPO="congiirepair/OnAirFree"
           # Keep one "sideload" release updated so the download URL never changes.
