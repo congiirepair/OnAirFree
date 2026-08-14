@@ -10,6 +10,7 @@ struct RootView: View {
     @EnvironmentObject var ble: BLEManager
     @EnvironmentObject var state: SuspensionState
     @AppStorage("selectedModel") private var selectedModel = ""
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -22,5 +23,12 @@ struct RootView: View {
             }
         }
         .animation(.default, value: selectedModel)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: ble.releaseForBackground()   // free controller for hand-off
+            case .active:     ble.resumeAutoConnect()      // re-grab it when back in front
+            default: break
+            }
+        }
     }
 }

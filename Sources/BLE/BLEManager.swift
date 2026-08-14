@@ -51,6 +51,20 @@ final class BLEManager: NSObject, ObservableObject {
     private var writeType: CBCharacteristicWriteType = .withoutResponse
     private var pollTask: Task<Void, Never>?
 
+    // Auto-connect: remember the last device and re-link when it's in range.
+    private let lastDeviceKey = "lastDeviceID"
+    private var userInitiatedDisconnect = false
+    @Published var autoConnectEnabled: Bool =
+        (UserDefaults.standard.object(forKey: "autoConnectEnabled") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(autoConnectEnabled, forKey: "autoConnectEnabled") }
+    }
+    /// Release the controller when the app is backgrounded, so another phone can
+    /// take over (hand-off). On by default so the app is a good shared-car citizen.
+    @Published var releaseWhenInactive: Bool =
+        (UserDefaults.standard.object(forKey: "releaseWhenInactive") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(releaseWhenInactive, forKey: "releaseWhenInactive") }
+    }
+
     // Buffer for reassembling multi-packet frames terminated by 0D 0A.
     private var rxBuffer = Data()
 
@@ -86,8 +100,43 @@ final class BLEManager: NSObject, ObservableObject {
         central.connect(p, options: nil)
     }
 
+    /// User-initiated disconnect — suppresses auto-reconnect until next launch/scan.
     func disconnect() {
+        userInitiatedDisconnect = true
         if let p = connected { central.cancelPeripheralConnection(p) }
+    }
+
+    /// Forget the saved device so this phone stops auto-connecting to it.
+    func forgetDevice() {
+        UserDefaults.standard.removeObject(forKey: lastDeviceKey)
+        disconnect()
+    }
+
+    /// Re-link to the last device (called when Bluetooth powers on). `connect()`
+    /// has no timeout, so the link completes whenever the controller is in range.
+    private func tryAutoConnect() {
+        guard autoConnectEnabled, !state.isConnected, connected == nil,
+              let idStr = UserDefaults.standard.string(forKey: lastDeviceKey),
+              let uuid = UUID(uuidString: idStr) else { return }
+        if let p = central.retrievePeripherals(withIdentifiers: [uuid]).first {
+            connected = p
+            p.delegate = self
+            central.connect(p, options: nil)
+        }
+        startScan()   // fallback discovery in case the system no longer knows it
+    }
+
+    /// App went to background — free the controller for hand-off (temporary;
+    /// auto-connect resumes when the app returns to the foreground).
+    func releaseForBackground() {
+        guard releaseWhenInactive, state.isConnected || connected != nil else { return }
+        userInitiatedDisconnect = true          // don't immediately re-grab on the drop
+        if let p = connected { central.cancelPeripheralConnection(p) }
+    }
+
+    /// App returned to foreground — try to re-grab the last controller.
+    func resumeAutoConnect() {
+        tryAutoConnect()
     }
 
     // MARK: Send
@@ -133,7 +182,9 @@ extension BLEManager: CBCentralManagerDelegate {
         let poweredOn = central.state == .poweredOn
         Task { @MainActor in
             self.bluetoothReady = poweredOn
-            if !poweredOn {
+            if poweredOn {
+                self.tryAutoConnect()          // re-link to the last device on launch
+            } else {
                 self.stopPolling()
                 self.state.isConnected = false
                 self.state.reset()
@@ -157,6 +208,11 @@ extension BLEManager: CBCentralManagerDelegate {
                 self.discovered[idx] = dev
             } else {
                 self.discovered.append(dev)
+            }
+            // Auto-connect to the last-used device when it reappears.
+            if self.autoConnectEnabled, self.connected == nil, !self.state.isConnected,
+               UserDefaults.standard.string(forKey: self.lastDeviceKey) == peripheral.identifier.uuidString {
+                self.connect(dev)
             }
         }
     }
@@ -182,9 +238,17 @@ extension BLEManager: CBCentralManagerDelegate {
         Task { @MainActor in
             self.stopPolling()
             self.writeChar = nil
-            self.connected = nil
             self.state.isConnected = false
             self.state.reset()
+            let userQuit = self.userInitiatedDisconnect
+            self.userInitiatedDisconnect = false
+            if self.autoConnectEnabled, !userQuit {
+                // Unexpected drop (e.g. out of range): keep a pending connect so it
+                // re-links automatically when the controller is back in range.
+                self.central.connect(peripheral, options: nil)
+            } else {
+                self.connected = nil
+            }
         }
     }
 }
@@ -219,6 +283,7 @@ extension BLEManager: CBPeripheralDelegate {
         let writeToSet = chosenWrite
         let typeToSet = chosenType
         let name = peripheral.name ?? "OnAir"
+        let deviceID = peripheral.identifier.uuidString
         Task { @MainActor in
             if let writeToSet, self.writeChar == nil || writeToSet.uuid == UART.charStd {
                 self.writeChar = writeToSet
@@ -228,6 +293,7 @@ extension BLEManager: CBPeripheralDelegate {
             if self.writeChar != nil, self.connected != nil, !self.state.isConnected {
                 self.state.isConnected = true
                 self.state.connectedName = name
+                UserDefaults.standard.set(deviceID, forKey: self.lastDeviceKey)  // remember for auto-connect
                 self.startPolling()                     // continuous status refresh
             }
         }

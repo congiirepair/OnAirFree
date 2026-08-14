@@ -15,6 +15,7 @@ struct DeviceListScreen: View {
         ZStack {
             Color.clear.ignoresSafeArea()      // starfield (from AppShell) shows through
             VStack(spacing: 0) {
+                autoConnectToggle
                 if !ble.bluetoothReady {
                     info("Bluetooth is off", "Turn on Bluetooth to find your OnAir controller.")
                 } else if s.isConnected {
@@ -42,6 +43,36 @@ struct DeviceListScreen: View {
         .onChange(of: s.isConnected) { _, connected in
             if connected { nav.back() }   // jump to controller once connected
         }
+    }
+
+    private var autoConnectToggle: some View {
+        VStack(spacing: 10) {
+            settingRow("Auto-connect",
+                       "Reconnect to your controller automatically when it's in range.",
+                       isOn: $ble.autoConnectEnabled)
+            settingRow("Release when app is closed",
+                       "Frees the controller so another phone can take over when you leave the app.",
+                       isOn: $ble.releaseWhenInactive)
+        }
+        .padding(.horizontal, 20).padding(.bottom, 10)
+    }
+
+    private func settingRow(_ title: String, _ subtitle: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
+                Text(subtitle).font(.caption).foregroundColor(OnAirTheme.gray)
+            }
+            Spacer()
+            Toggle("", isOn: isOn).labelsHidden().tint(OnAirTheme.violet)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(OnAirTheme.violet.opacity(0.25), lineWidth: 1))
+        )
     }
 
     private var deviceList: some View {
@@ -75,6 +106,8 @@ struct DeviceListScreen: View {
                 .font(.title3.bold()).foregroundColor(OnAirTheme.text)
             Button("Disconnect", role: .destructive) { ble.disconnect() }
                 .padding(.top, 6)
+            Button("Forget this device") { ble.forgetDevice() }
+                .font(.caption).foregroundColor(OnAirTheme.gray)
         }
         .padding(.top, 40)
     }
