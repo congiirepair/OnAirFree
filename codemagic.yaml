@@ -33,6 +33,43 @@ workflows:
     # No artifacts/publishing — this only proves the code compiles.
 
   # ---------------------------------------------------------------------------
+  unsigned-ipa:
+    name: Unsigned IPA (for Sideloadly)
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen if needed
+        script: |
+          which xcodegen || brew install xcodegen
+      - name: Generate Xcode project
+        script: xcodegen generate
+      - name: Archive for device without code signing
+        script: |
+          xcodebuild archive \
+            -project "OnAirFree.xcodeproj" \
+            -scheme "OnAirFree" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "build/OnAirFree.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package into an unsigned .ipa
+        script: |
+          cd build
+          mkdir -p Payload
+          cp -R "OnAirFree.xcarchive/Products/Applications/OnAirFree.app" "Payload/"
+          zip -r "OnAirFree-unsigned.ipa" "Payload"
+          rm -rf Payload
+          echo "Built:" && ls -lh OnAirFree-unsigned.ipa
+    artifacts:
+      - build/*.ipa
+    # Download the .ipa from the build's Artifacts section, then sign+install
+    # it with Sideloadly using your Apple ID (free = 7 days, paid = 1 year).
+
+  # ---------------------------------------------------------------------------
   ios-testflight:
     name: iOS to TestFlight
     instance_type: mac_mini_m2
