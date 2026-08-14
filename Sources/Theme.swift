@@ -30,4 +30,13 @@ enum OnAirTheme {
     static let text         = Color.white            // color_text
     static let deviceItemBg = Color(hex: 0x8B97A6).opacity(0.53) // colorDeviceListItemBg (#888b97a6)
     static let errorText    = Color.white
+
+    // MARK: Futuristic space theme (violet)
+    static let spaceTop    = Color(hex: 0x1A0F2E)   // deep violet-navy (top of gradient)
+    static let spaceMid    = Color(hex: 0x0C0818)
+    static let spaceBottom = Color(hex: 0x040308)   // near black (bottom)
+    static let violet      = Color(hex: 0xA855F7)   // primary neon accent
+    static let violetLight = Color(hex: 0xC084FC)
+    static let violetGlow  = Color(hex: 0xD946EF)   // brightest highlight/glow
+    static let starColor   = Color(red: 0.86, green: 0.85, blue: 1.0)
 }

@@ -13,7 +13,7 @@ struct ModelPickerView: View {
 
     var body: some View {
         ZStack {
-            OnAirTheme.background.ignoresSafeArea()
+            SpaceBackground()
 
             GeometryReader { geo in
                 VStack(spacing: 18) {

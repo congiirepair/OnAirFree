@@ -14,10 +14,10 @@ struct AppShell: View {
 
     var body: some View {
         ZStack {
-            OnAirTheme.background.ignoresSafeArea()
+            SpaceBackground()
             VStack(spacing: 0) {
                 ToolbarBar()
-                Divider().background(OnAirTheme.line)
+                Divider().background(OnAirTheme.violet.opacity(0.25))
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -77,7 +77,6 @@ private struct ToolbarBar: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
-        .background(OnAirTheme.background)
     }
 }
 
