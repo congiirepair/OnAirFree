@@ -1,0 +1,75 @@
+# Codemagic CI/CD for OnAirFree
+# Docs: https://docs.codemagic.io/yaml-quick-start/building-a-native-ios-app/
+#
+# Two workflows:
+#   1) build-check     — unsigned compile check. Needs NO Apple account. Run this
+#                        first (free) to shake out any first-build Swift errors.
+#   2) ios-testflight  — signed build + upload to TestFlight. Needs an Apple
+#                        Developer account + an App Store Connect API key added
+#                        to Codemagic (see CODEMAGIC-SETUP.md).
+
+workflows:
+
+  # ---------------------------------------------------------------------------
+  build-check:
+    name: Build check (no signing)
+    instance_type: mac_mini_m2      # free-tier machine
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen if needed
+        script: |
+          which xcodegen || brew install xcodegen
+      - name: Generate Xcode project
+        script: xcodegen generate
+      - name: Compile for the simulator (no code signing)
+        script: |
+          xcodebuild build \
+            -project "OnAirFree.xcodeproj" \
+            -scheme "OnAirFree" \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+    # No artifacts/publishing — this only proves the code compiles.
+
+  # ---------------------------------------------------------------------------
+  ios-testflight:
+    name: iOS to TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Name of the App Store Connect API key you add in the Codemagic UI
+      # (Teams -> Integrations -> Apple Developer Portal / App Store Connect).
+      app_store_connect: CODEMAGIC_ASC_KEY
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.masoairOnair.onairfree   # must match project.yml
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen if needed
+        script: |
+          which xcodegen || brew install xcodegen
+      - name: Generate Xcode project
+        script: xcodegen generate
+      - name: Set unique build number
+        script: |
+          # Codemagic's per-project counter guarantees a fresh number each build.
+          agvtool new-version -all "$PROJECT_BUILD_NUMBER" || true
+      - name: Fetch signing profiles (from the ASC integration)
+        script: xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "OnAirFree.xcodeproj" \
+            --scheme "OnAirFree"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # Add your own Apple ID email here to get build notifications:
+        # beta_groups:
+        #   - "Internal testers"

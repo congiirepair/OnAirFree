@@ -1,0 +1,10 @@
+# Force Unix (LF) line endings for everything that runs/builds on macOS/CI.
+# Prevents Windows CRLF from breaking shell scripts inside codemagic.yaml.
+* text=auto eol=lf
+
+*.swift   text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.plist   text eol=lf
+*.md      text eol=lf
+*.sh      text eol=lf

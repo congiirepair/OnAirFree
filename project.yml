@@ -1,0 +1,55 @@
+#
+# XcodeGen spec — generates OnAirFree.xcodeproj on a Mac.
+#   brew install xcodegen
+#   xcodegen generate
+#   open OnAirFree.xcodeproj
+#
+name: OnAirFree
+options:
+  bundleIdPrefix: com.masoairOnair
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.2.6"
+    CURRENT_PROJECT_VERSION: "7"
+    SWIFT_VERSION: "5.0"
+    VERSIONING_SYSTEM: "apple-generic"   # lets CI bump the build number via agvtool
+    # DEVELOPMENT_TEAM: ABCDE12345       # set in Xcode UI, or Codemagic sets it via signing
+
+targets:
+  OnAirFree:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        # NOTE: this bundle id must match `ios_signing.bundle_identifier` in codemagic.yaml
+        # and the App ID you register in App Store Connect.
+        PRODUCT_BUNDLE_IDENTIFIER: com.masoairOnair.onairfree
+        TARGETED_DEVICE_FAMILY: "1,2"      # iPhone + iPad
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: OnAir
+        NSBluetoothAlwaysUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
+        NSBluetoothPeripheralUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+
+# A shared scheme is required for headless CI builds (xcodebuild -scheme OnAirFree).
+schemes:
+  OnAirFree:
+    build:
+      targets:
+        OnAirFree: all
+    run:
+      config: Debug
+    archive:
+      config: Release
