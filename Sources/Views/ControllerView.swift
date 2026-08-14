@@ -13,6 +13,8 @@ struct ControllerView: View {
     @EnvironmentObject var s: SuspensionState
     @AppStorage("selectedModel") private var selectedModel = "model3"
     @State private var showHighWarning = false
+    @State private var hover = false        // ambient float
+    @State private var glowPulse = false    // ambient under-glow breathing
 
     private var car: CarModel { CarModels.by(id: selectedModel) }
 
@@ -56,9 +58,13 @@ struct ControllerView: View {
                 .frame(width: 320 * scale, height: 150 * scale)
                 .blur(radius: 28)
                 .offset(y: 44 * scale)
+                .scaleEffect(glowPulse ? 1.06 : 0.94)     // breathing glow
+                .opacity(glowPulse ? 0.7 : 0.45)
 
             Image(car.image).resizable().scaledToFit()
                 .frame(width: 240 * scale)
+                .offset(y: hover ? -6 : 6)                // gentle hover
+                .shadow(color: OnAirTheme.violet.opacity(0.35), radius: 12, y: 6)
 
             HStack {
                 Spacer()
@@ -73,6 +79,10 @@ struct ControllerView: View {
         }
         .offset(y: carOffset(scale))
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: s.height)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) { hover = true }
+            withAnimation(.easeInOut(duration: 3.6).repeatForever(autoreverses: true)) { glowPulse = true }
+        }
     }
 
     private func carOffset(_ scale: CGFloat) -> CGFloat {
