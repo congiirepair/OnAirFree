@@ -25,12 +25,14 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: Resources/Assets.xcassets
     settings:
       base:
         # NOTE: this bundle id must match `ios_signing.bundle_identifier` in codemagic.yaml
         # and the App ID you register in App Store Connect.
         PRODUCT_BUNDLE_IDENTIFIER: com.masoairOnair.onairfree
         TARGETED_DEVICE_FAMILY: "1,2"      # iPhone + iPad
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
     info:

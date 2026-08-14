@@ -1,13 +1,15 @@
 //
 //  ControllerView.swift
-//  Main air-suspension controller. Wired to the real command set.
+//  Pixel-matched recreation of the original fragment_man_controller.xml,
+//  using the real button/car/logo art extracted from the APK.
 //
-//  Behavior mirrors the Android ControllerFragment:
-//   • Low / OnAir / High    → momentary tap
-//   • Manual wheel up/down   → press-and-hold (move while held, stop on release)
-//   • All Down               → press-and-hold ~3s to activate (safety)
-//   • Auto                   → toggle
-//   • Memory 1/2/3           → save current height into a slot
+//  Layout (top → bottom), matching the original ConstraintLayout:
+//    OnAir logo → up indicator → car image → down indicator (+warning +name)
+//    → rounded Low/OnAir/High bar → Auto ........ All Down
+//
+//  The up/down arrows are STATUS INDICATORS (driven by ledUp/ledDown from the
+//  device), exactly like the original — not buttons. Low/OnAir/High send the
+//  height commands; Auto toggles; All Down needs a 5-second hold.
 //
 
 import SwiftUI
@@ -15,171 +17,189 @@ import SwiftUI
 struct ControllerView: View {
     @EnvironmentObject var ble: BLEManager
     @EnvironmentObject var s: SuspensionState
+    @AppStorage("selectedModel") private var selectedModel = "model3"
+
+    private var car: CarModel { CarModels.by(id: selectedModel) }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    statusCard
-                    if s.anyWarning { warningCard }
-                    heightPresets
-                    manualWheels
-                    modesRow
-                    memoryRow
+        ZStack {
+            OnAirTheme.background.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                topBar
+                Spacer(minLength: 8)
+
+                Image("image_onair").resizable().scaledToFit()
+                    .frame(width: 144, height: 60)
+
+                Spacer(minLength: 12)
+
+                // Up status indicator
+                Image(s.ledUp ? "controll_up_light" : "controll_up_dark")
+                    .resizable().scaledToFit().frame(width: 54, height: 26)
+
+                // Car
+                Image(car.image).resizable().scaledToFit()
+                    .frame(width: 217, height: 102)
+
+                // Down indicator, with warning (left) and car name (right)
+                ZStack {
+                    Image(s.ledDown ? "controll_down_light" : "controll_down_dark")
+                        .resizable().scaledToFit().frame(width: 54, height: 26)
+                    HStack {
+                        Image("menu_system_display_warning")
+                            .resizable().frame(width: 25, height: 25)
+                            .opacity(s.anyWarning ? 1 : 0)
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 0) {
+                            Text(car.brand)
+                            Text(car.line)
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(OnAirTheme.text)
+                    }
+                    .padding(.horizontal, 26)
                 }
-                .padding()
-            }
-            .navigationTitle(s.connectedName.isEmpty ? "OnAir" : s.connectedName)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Disconnect", role: .destructive) { ble.disconnect() }
-                }
+
+                Spacer(minLength: 16)
+
+                heightBar
+                Spacer(minLength: 22)
+                autoAndAllDown
+                Spacer(minLength: 28)
             }
         }
     }
 
-    // MARK: Status
+    // MARK: Top bar (title + connection)
 
-    private var statusCard: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Label(s.isConnected ? "Connected" : "Disconnected",
-                      systemImage: "dot.radiowaves.left.and.right")
-                    .foregroundStyle(s.isConnected ? .green : .secondary)
+    private var topBar: some View {
+        HStack {
+            Text(s.connectedName.isEmpty ? "OnAir" : s.connectedName)
+                .font(.headline).foregroundColor(OnAirTheme.text)
+            Spacer()
+            Button {
+                ble.send(OnAirCommand.getAirBottlePressure)
+            } label: {
+                Image(systemName: "arrow.clockwise").foregroundColor(OnAirTheme.gray)
+            }
+            Button(role: .destructive) {
+                ble.disconnect()
+            } label: {
+                Image(systemName: "xmark.circle").foregroundColor(OnAirTheme.gray)
+            }
+        }
+        .padding(.horizontal, 20).padding(.top, 8)
+    }
+
+    // MARK: Low / OnAir / High
+
+    private var heightBar: some View {
+        ZStack {
+            Capsule()
+                .fill(OnAirTheme.background)
+                .overlay(Capsule().stroke(OnAirTheme.buttonLine, lineWidth: 2))
+                .frame(width: 235, height: 37)
+
+            HStack(spacing: 0) {
+                heightButton(.low,   "controll_low_normoal", "controll_low_select")
                 Spacer()
-                Button {
-                    ble.send(OnAirCommand.getAirBottlePressure)
-                } label: { Image(systemName: "arrow.clockwise") }
+                heightButton(.onair, "controll_onair",       "controll_onair_checked")
+                Spacer()
+                heightButton(.high,  "high_normal",          "high")
             }
-            HStack(spacing: 24) {
-                stat("Height", s.height == .none ? "—" : s.height.rawValue.capitalized)
-                stat("Tank", "\(s.airPressure)")
-                stat("Speed", "\(s.currentSpeed)")
-            }
+            .frame(width: 235)
         }
-        .padding()
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 16))
+        .frame(height: 52)         // buttons sit slightly proud of the bar
+        .opacity(s.isRepairMode ? 0.4 : 1)
+        .allowsHitTesting(!s.isRepairMode)
     }
 
-    private func stat(_ title: String, _ value: String) -> some View {
-        VStack {
-            Text(value).font(.title2.bold())
-            Text(title).font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var warningCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("System warning", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange).font(.headline)
-            let items = [
-                ("Front height sensor", s.warnFrontHeightSensor),
-                ("Rear height sensor",  s.warnBackHeightSensor),
-                ("Air tank",            s.warnAirTank),
-                ("Air pump",            s.warnAirPump),
-                ("Device",              s.warnDevice),
-                ("MCU",                 s.warnMcu),
-            ].filter { $0.1 }
-            ForEach(items, id: \.0) { Text("• \($0.0)").font(.caption) }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    // MARK: Height presets
-
-    private var heightPresets: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Ride height")
-            HStack(spacing: 12) {
-                presetButton("Low",   .low,   OnAirCommand.low)
-                presetButton("OnAir", .onair, OnAirCommand.onair)
-                presetButton("High",  .high,  OnAirCommand.high)
-            }
-        }
-    }
-
-    private func presetButton(_ title: String, _ h: SuspensionState.Height, _ cmd: String) -> some View {
-        Button {
+    private func heightButton(_ h: SuspensionState.Height,
+                              _ normal: String, _ selected: String) -> some View {
+        let isSel = s.height == h
+        let cmd = h == .low ? OnAirCommand.low : h == .onair ? OnAirCommand.onair : OnAirCommand.high
+        return Button {
             ble.send(cmd)
         } label: {
-            Text(title).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+            Image(isSel ? selected : normal)
+                .resizable().scaledToFit()
+                .frame(width: 52, height: 52)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(s.height == h ? .accentColor : .gray)
-        .disabled(s.isRepairMode)
+        .buttonStyle(.plain)
     }
 
-    // MARK: Manual wheels (press & hold)
+    // MARK: Auto + All Down
 
-    private var manualWheels: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Manual control (hold)")
-            wheelRow("Front", up: OnAirCommand.frontWheelUp, down: OnAirCommand.frontWheelDown)
-            wheelRow("Rear",  up: OnAirCommand.backWheelUp,  down: OnAirCommand.backWheelDown)
-            wheelRow("All",   up: OnAirCommand.frontBackWheelUp, down: OnAirCommand.frontBackWheelDown)
-        }
-    }
+    private var autoAndAllDown: some View {
+        HStack {
+            // Auto — toggles open/close auto
+            Button {
+                ble.send(s.isAuto ? OnAirCommand.closeAuto : OnAirCommand.openAuto)
+            } label: {
+                Image(s.isAuto ? "auto" : "auto_dark")
+                    .resizable().scaledToFit().frame(width: 52, height: 52)
+            }
+            .buttonStyle(.plain)
 
-    private func wheelRow(_ label: String, up: String, down: String) -> some View {
-        HStack(spacing: 12) {
-            Text(label).frame(width: 54, alignment: .leading)
-            HoldButton(title: "Up", systemImage: "arrow.up",
-                       onPress: { ble.send(up) },
-                       onRelease: { ble.send(OnAirCommand.wheelUpStop) })
-            HoldButton(title: "Down", systemImage: "arrow.down",
-                       onPress: { ble.send(down) },
-                       onRelease: { ble.send(OnAirCommand.wheelDownStop) })
-        }
-        .disabled(s.isRepairMode)
-    }
+            Spacer()
 
-    // MARK: Modes
-
-    private var modesRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Modes")
-            HStack(spacing: 12) {
-                Toggle("Auto", isOn: Binding(
-                    get: { s.isAuto },
-                    set: { ble.send($0 ? OnAirCommand.openAuto : OnAirCommand.closeAuto) }
-                ))
-                .toggleStyle(.button).buttonStyle(.bordered)
-
-                // All-down: hold 5s to activate (safety); sends the dump frame.
-                HoldButton(title: "All Down (hold 5s)", systemImage: "arrow.down.to.line",
-                           tint: .red, minimumHold: 5.0,
-                           onPress: { },
-                           onRelease: { },
-                           onHoldComplete: { ble.send(OnAirCommand.allDown) })
-                    .disabled(!s.allDownEnable)
+            // All Down — hold 5s to activate (safety)
+            AllDownHoldButton(enabled: s.allDownEnable) {
+                ble.send(OnAirCommand.allDown)
             }
         }
+        .frame(width: 235)
+    }
+}
+
+/// All-Down control using the real art; requires a 5-second hold, with a
+/// progress ring for feedback (mirrors the original safety behavior).
+private struct AllDownHoldButton: View {
+    let enabled: Bool
+    let onActivate: () -> Void
+
+    init(enabled: Bool, onActivate: @escaping () -> Void) {
+        self.enabled = enabled
+        self.onActivate = onActivate
     }
 
-    // MARK: Memory
+    @State private var pressed = false
+    @State private var progress: Double = 0
+    @State private var task: Task<Void, Never>?
 
-    private var memoryRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Save memory height")
-            HStack(spacing: 12) {
-                memButton("M1", OnAirCommand.setMemory1)
-                memButton("M2", OnAirCommand.setMemory2)
-                memButton("M3", OnAirCommand.setMemory3)
+    var body: some View {
+        ZStack {
+            Image(pressed ? "all_down_slect" : "all_down_dark")
+                .resizable().scaledToFit().frame(width: 52, height: 52)
+            if pressed {
+                Circle().trim(from: 0, to: progress)
+                    .stroke(OnAirTheme.accent, lineWidth: 3)
+                    .frame(width: 50, height: 50).rotationEffect(.degrees(-90))
             }
         }
+        .opacity(enabled ? 1 : 0.4)
+        .allowsHitTesting(enabled)
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { _ in if !pressed { begin() } }
+            .onEnded { _ in end() })
     }
 
-    private func memButton(_ title: String, _ cmd: String) -> some View {
-        Button { ble.send(cmd) } label: {
-            Text(title).frame(maxWidth: .infinity).padding(.vertical, 12)
+    private func begin() {
+        pressed = true; progress = 0
+        task = Task {
+            let steps = 50, hold = 5.0
+            for i in 1...steps {
+                try? await Task.sleep(nanoseconds: UInt64(hold / Double(steps) * 1_000_000_000))
+                if Task.isCancelled { return }
+                await MainActor.run { progress = Double(i) / Double(steps) }
+            }
+            if !Task.isCancelled { await MainActor.run { onActivate() } }
         }
-        .buttonStyle(.bordered)
     }
 
-    private func sectionTitle(_ t: String) -> some View {
-        Text(t).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
+    private func end() {
+        pressed = false; progress = 0
+        task?.cancel(); task = nil
     }
 }

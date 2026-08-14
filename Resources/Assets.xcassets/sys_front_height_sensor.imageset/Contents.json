@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "scale": "1x",
+      "filename": "sys_front_height_sensor.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "2x",
+      "filename": "sys_front_height_sensor@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "sys_front_height_sensor@3x.png"
+    }
+  ],
+  "info": {
+    "version": 1,
+    "author": "xcodegen"
+  }
+}

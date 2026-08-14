@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "scale": "1x",
+      "filename": "high_upaor_slect.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "2x",
+      "filename": "high_upaor_slect@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "high_upaor_slect@3x.png"
+    }
+  ],
+  "info": {
+    "version": 1,
+    "author": "xcodegen"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "scale": "2x",
+      "filename": "dialog_loading_img@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "dialog_loading_img@3x.png"
+    }
+  ],
+  "info": {
+    "version": 1,
+    "author": "xcodegen"
+  }
+}

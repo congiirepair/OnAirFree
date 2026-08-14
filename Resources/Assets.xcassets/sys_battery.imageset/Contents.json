@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "scale": "1x",
+      "filename": "sys_battery.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "2x",
+      "filename": "sys_battery@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "sys_battery@3x.png"
+    }
+  ],
+  "info": {
+    "version": 1,
+    "author": "xcodegen"
+  }
+}

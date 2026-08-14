@@ -1,50 +1,68 @@
 //
 //  ModelPickerView.swift
-//  First-run car-model selection. Mirrors the Android ChoesModeFragment,
-//  which stores the choice under the "deviceType" key. No login required.
+//  Pixel-matched recreation of activity_choes_mode.xml — the OnAir logo over a
+//  "Vehicle Model" dropdown that reveals the selectable models. No login.
+//  Selecting one stores the deviceType (like the original) and continues.
 //
 
 import SwiftUI
 
 struct ModelPickerView: View {
     @Binding var selectedModel: String
-
-    // Values mirror Common.SELECT_MODE_* in the Android source.
-    private let models: [(label: String, value: String)] = [
-        ("Tesla Model 3", "model3"),
-        ("Tesla Model Y", "modelY"),
-        ("XPeng P7",      "xPengP7"),
-    ]
+    @State private var expanded = false
 
     var body: some View {
-        VStack(spacing: 28) {
-            Spacer()
-            Image(systemName: "car.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.tint)
-            Text("Choose your model")
-                .font(.largeTitle.bold())
-            Text("Select the vehicle your OnAir system is installed on.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+        ZStack {
+            OnAirTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 14) {
-                ForEach(models, id: \.value) { model in
+            GeometryReader { geo in
+                VStack(spacing: 18) {
+                    Spacer().frame(height: geo.size.height * 0.22)
+
+                    Image("image_onair").resizable().scaledToFit()
+                        .frame(width: 180, height: 76)
+
+                    // "Vehicle Model" selector
                     Button {
-                        selectedModel = model.value
+                        withAnimation(.easeInOut) { expanded.toggle() }
                     } label: {
-                        Text(model.label)
-                            .font(.title3.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                        HStack {
+                            Text("Vehicle Model")
+                            Spacer()
+                            Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        }
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(OnAirTheme.text)
+                        .padding(.horizontal, 22).frame(height: 46)
+                        .frame(width: 240)
+                        .overlay(RoundedRectangle(cornerRadius: 23)
+                            .stroke(OnAirTheme.buttonLine, lineWidth: 2))
                     }
-                    .buttonStyle(.borderedProminent)
+
+                    if expanded {
+                        VStack(spacing: 0) {
+                            ForEach(CarModels.all) { model in
+                                Button {
+                                    selectedModel = model.id      // store deviceType, then RootView advances
+                                } label: {
+                                    Text(model.display)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(OnAirTheme.background)
+                                        .frame(maxWidth: .infinity).frame(height: 40)
+                                        .background(OnAirTheme.menuLine)
+                                        .overlay(Divider().background(OnAirTheme.background), alignment: .bottom)
+                                }
+                            }
+                        }
+                        .frame(width: 240)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
+                    Spacer()
                 }
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 28)
-            Spacer()
         }
     }
 }
