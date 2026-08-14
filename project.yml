@@ -37,6 +37,7 @@ targets:
       path: Resources/Info.plist
       properties:
         CFBundleDisplayName: OnAir
+        ITSAppUsesNonExemptEncryption: false   # no custom crypto -> skips TestFlight compliance prompt
         NSBluetoothAlwaysUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
         NSBluetoothPeripheralUsageDescription: "OnAir uses Bluetooth to connect to your air-suspension controller."
         UILaunchScreen: {}
