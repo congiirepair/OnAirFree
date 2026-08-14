@@ -12,8 +12,10 @@ struct CarbonBackground: View {
             Color.black
             Image("carbon_tile")
                 .resizable(resizingMode: .tile)
-            RadialGradient(colors: [Color.white.opacity(0.05), .clear, Color.black.opacity(0.55)],
-                           center: .center, startRadius: 80, endRadius: 640)
+                .opacity(0.38)                       // fade the weave so it's subtle
+            // darken overall, strongest toward the edges
+            RadialGradient(colors: [Color.black.opacity(0.30), Color.black.opacity(0.78)],
+                           center: .center, startRadius: 90, endRadius: 700)
         }
         .ignoresSafeArea()
     }
