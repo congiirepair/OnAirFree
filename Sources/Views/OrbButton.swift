@@ -2,8 +2,12 @@
 //  OrbButton.swift
 //  A metallic circular control that pairs with the carbon-fiber theme: domed
 //  gunmetal face, beveled rim (light top → dark bottom), glossy sheen, and a
-//  lift shadow for depth. It's engageable — presses in (scale + darken) with a
-//  haptic tap, and lights up bright white when its mode is selected.
+//  lift shadow for depth. Presses in with a haptic and lights up bright white
+//  when its mode is selected.
+//
+//  Taps are driven by a real Button (single-tap) or onTapGesture(count:) for the
+//  triple-tap All Down — NOT a minimum-distance-0 DragGesture, which silently
+//  swallows the tap.
 //
 
 import SwiftUI
@@ -17,9 +21,29 @@ struct OrbButton<Content: View>: View {
     let action: () -> Void
     @ViewBuilder var content: () -> Content
 
-    @State private var pressed = false
-
     var body: some View {
+        Group {
+            if tapCount > 1 {
+                // Multi-tap (All Down): a plain tap gesture, no conflicting drag.
+                face
+                    .contentShape(Circle())
+                    .onTapGesture(count: tapCount) { fire() }
+            } else {
+                // Single tap: a real Button (reliable) with a press-in style.
+                Button(action: fire) { face }
+                    .buttonStyle(OrbPressStyle())
+            }
+        }
+        .opacity(enabled ? 1 : 0.4)
+        .allowsHitTesting(enabled)
+    }
+
+    private func fire() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        action()
+    }
+
+    private var face: some View {
         ZStack {
             // Domed metal face — dark gunmetal, or bright when selected.
             Circle()
@@ -49,23 +73,19 @@ struct OrbButton<Content: View>: View {
             content()
         }
         .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.6), radius: pressed ? 3 : 8, y: pressed ? 1 : 5)   // lift
-        .shadow(color: Color.white.opacity(selected ? 0.5 : 0), radius: 16)                 // glow when chosen
-        .brightness(pressed ? -0.06 : 0)
-        .scaleEffect(pressed ? 0.93 : (selected ? 1.05 : 1.0))
-        .opacity(enabled ? 1 : 0.4)
-        .allowsHitTesting(enabled)
-        .contentShape(Circle())
-        .animation(.spring(response: 0.25, dampingFraction: 0.55), value: pressed)
+        .shadow(color: .black.opacity(0.6), radius: 8, y: 5)                 // lift
+        .shadow(color: Color.white.opacity(selected ? 0.5 : 0), radius: 16)  // glow when chosen
+        .scaleEffect(selected ? 1.05 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: selected)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in if !pressed { pressed = true } }
-                .onEnded { _ in pressed = false }
-        )
-        .onTapGesture(count: tapCount) {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            action()
-        }
+    }
+}
+
+/// Press-in feedback for the single-tap orbs (scale down + slight darken).
+private struct OrbPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.93 : 1.0)
+            .brightness(configuration.isPressed ? -0.06 : 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.55), value: configuration.isPressed)
     }
 }
