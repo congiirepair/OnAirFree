@@ -37,6 +37,7 @@ struct AppShell: View {
         case .smartSpeed:        SmartSpeedScreen()
         case .errorNotification: ErrorNotificationScreen()
         case .engineer:          EngineerScreen()
+        case .debug:             DebugScreen()
         default:                 ComingSoonScreen(title: nav.screen.title)
         }
     }

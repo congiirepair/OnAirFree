@@ -25,6 +25,14 @@ private enum UART {
     static let charCustomRead  = CBUUID(string: "00010203-0405-0607-0809-0a0b0c0d1910")
 }
 
+/// "FFE1" from a full 128-bit UUID; else the first 8 chars — for the debug log.
+private func shortUUID(_ uuid: String) -> String {
+    if uuid.uppercased().hasSuffix("-0000-1000-8000-00805F9B34FB") {
+        return String(uuid.prefix(8).suffix(4)).uppercased()
+    }
+    return String(uuid.prefix(8)).uppercased()
+}
+
 /// A discovered device shown in the scan list.
 struct ScannedDevice: Identifiable, Equatable {
     let id: UUID           // peripheral.identifier
@@ -63,6 +71,15 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     var hasSavedDevice: Bool { UserDefaults.standard.string(forKey: lastDeviceKey) != nil }
+
+    // Debug frame log (shown on the Debug screen).
+    @Published var debugLines: [String] = []
+    @Published var writeCharInfo: String = "—"
+    func dbg(_ s: String) {
+        debugLines.append(s)
+        if debugLines.count > 250 { debugLines.removeFirst(debugLines.count - 250) }
+    }
+    func clearDebug() { debugLines.removeAll() }
 
     // Buffer for reassembling multi-packet frames terminated by 0D 0A.
     private var rxBuffer = Data()
@@ -149,10 +166,12 @@ final class BLEManager: NSObject, ObservableObject {
     /// Write a command hex string (from OnAirCommand) to the controller.
     func send(_ commandHex: String) {
         guard let p = connected, let c = writeChar else {
+            dbg("TX FAIL (no connection): \(commandHex)")
             lastError = "Not connected"
             return
         }
         p.writeValue(commandHex.onairHexData, for: c, type: writeType)
+        dbg("TX \(commandHex)")
     }
 
     // MARK: Status polling (mirrors the Android AutogetAir loop)
@@ -225,7 +244,8 @@ extension BLEManager: CBCentralManagerDelegate {
 
     nonisolated func centralManager(_ central: CBCentralManager,
                                     didConnect peripheral: CBPeripheral) {
-        peripheral.discoverServices([UART.serviceStd, UART.serviceCustom])
+        Task { @MainActor in self.dbg("CONNECTED \(peripheral.name ?? "?") — discovering services…") }
+        peripheral.discoverServices(nil)          // discover ALL services (was limited to FFE0/custom)
     }
 
     nonisolated func centralManager(_ central: CBCentralManager,
@@ -274,7 +294,16 @@ extension BLEManager: CBPeripheralDelegate {
         // then apply everything in a single MainActor hop to avoid ordering races.
         var chosenWrite: CBCharacteristic?
         var chosenType: CBCharacteristicWriteType = .withoutResponse
+        var log: [String] = []
+        let svc = shortUUID(service.uuid.uuidString)
         for c in service.characteristics ?? [] {
+            var props: [String] = []
+            if c.properties.contains(.read) { props.append("R") }
+            if c.properties.contains(.write) { props.append("W") }
+            if c.properties.contains(.writeWithoutResponse) { props.append("Wnr") }
+            if c.properties.contains(.notify) { props.append("N") }
+            if c.properties.contains(.indicate) { props.append("I") }
+            log.append("svc \(svc) · char \(shortUUID(c.uuid.uuidString)) [\(props.joined(separator: ","))]")
             if c.properties.contains(.notify) || c.properties.contains(.indicate) {
                 peripheral.setNotifyValue(true, for: c)
             }
@@ -288,10 +317,14 @@ extension BLEManager: CBPeripheralDelegate {
         let typeToSet = chosenType
         let name = peripheral.name ?? "OnAir"
         let deviceID = peripheral.identifier.uuidString
+        let logCopy = log
         Task { @MainActor in
+            for l in logCopy { self.dbg(l) }
             if let writeToSet, self.writeChar == nil || writeToSet.uuid == UART.charStd {
                 self.writeChar = writeToSet
                 self.writeType = typeToSet
+                self.writeCharInfo = "\(shortUUID(writeToSet.uuid.uuidString)) (\(typeToSet == .withoutResponse ? "no-response" : "with-response"))"
+                self.dbg("→ WRITE CHAR = \(self.writeCharInfo)")
             }
             // Guard on !isConnected so a device exposing both services only inits once.
             if self.writeChar != nil, self.connected != nil, !self.state.isConnected {
@@ -308,6 +341,7 @@ extension BLEManager: CBPeripheralDelegate {
                                 error: Error?) {
         guard let value = characteristic.value else { return }
         Task { @MainActor in
+            self.dbg("RX \(value.onairHexString)")
             self.handleIncoming(value)
         }
     }
